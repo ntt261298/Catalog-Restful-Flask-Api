@@ -1,0 +1,8 @@
+# IDE config
+.idea/
+
+DS_Store
+venv/
+./.Python
+
+*.pyc
