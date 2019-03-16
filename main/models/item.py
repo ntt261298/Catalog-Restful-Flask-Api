@@ -7,12 +7,14 @@ class ItemModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500))
     description = db.Column(db.String(5000))
-    cat_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
+    cat_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
 
-    def __init__(self, title, description, cat_id):
+    def __init__(self, title, description, cat_id, user_id):
         self.title = title
         self.description = description
         self.cat_id = cat_id
+        self.user_id = user_id
 
     @classmethod
     def find_by_title(cls, title):

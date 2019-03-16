@@ -7,3 +7,4 @@ class ItemSchema(Schema):
     title = fields.Str(required=True, validate=must_not_be_blank)
     description = fields.Str(required=True, validate=must_not_be_blank)
     cat_id = fields.Int(required=True, validate=must_not_be_blank)
+    user_id = fields.Int(required=True, validate=must_not_be_blank)
