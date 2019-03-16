@@ -10,6 +10,7 @@ category_schema = CategorySchema()
 categories_schema = CategorySchema(many=True)
 
 
+# Get all categories
 @app.route('/categories', methods=['GET'])
 def get_all_categories():
     categories = CategoryModel.query.all()
@@ -18,6 +19,7 @@ def get_all_categories():
     return jsonify({'categories': results}), 200
 
 
+# Get category by id
 @app.route('/categories/<int:cat_id>', methods=['GET'])
 def get_category(cat_id):
     try:
@@ -28,6 +30,7 @@ def get_category(cat_id):
     return jsonify({'item': result}), 200
 
 
+# Create new category
 @app.route('/categories', methods=['POST'])
 def create_category():
     json_data = request.get_json()
@@ -45,9 +48,10 @@ def create_category():
         return jsonify({'message': 'Category already exists.'}), 400
     category = CategoryModel(name)
     category.save_to_db()
-    return jsonify({'message': 'Created successfully.'}), 201
+    return jsonify({'message': 'Created category successfully.'}), 201
 
 
+# Update existed category
 @app.route('/categories/<int:cat_id>', methods=['PUT'])
 def update_category(cat_id):
     json_data = request.get_json()
@@ -65,9 +69,10 @@ def update_category(cat_id):
 
     category.name = data['name']
     category.save_to_db()
-    return jsonify({'message': 'Updated successfully.'}), 200
+    return jsonify({'message': 'Updated category successfully.'}), 200
 
 
+# Delete existed category
 @app.route('/categories/<int:cat_id>', methods=['DELETE'])
 def delete_category(cat_id):
     try:
@@ -75,4 +80,7 @@ def delete_category(cat_id):
     except IntegrityError:
         return jsonify({'message': 'Category could not be found.'}), 404
     category.delete_from_db()
-    return jsonify({'message': 'Deleted Successfully'}), 200
+    return jsonify({'message': 'Deleted category Successfully'}), 200
+
+
+
