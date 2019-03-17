@@ -1,5 +1,4 @@
 from flask import jsonify, request
-from flask_jwt import jwt_required
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 from main import app
@@ -11,6 +10,14 @@ item_schema = ItemSchema()
 items_schema = ItemSchema(many=True)
 
 
+# Get all items
+@app.route('/items', methods=['GET'])
+def get_items():
+    items = ItemModel.query.all()
+    result = items_schema.dump(items)
+    return jsonify({'items': result.data}), 200
+
+
 # Get all items from a category
 @app.route('/categories/<int:cat_id>/items', methods=['GET'])
 def get_items_from_category(cat_id):
@@ -20,12 +27,13 @@ def get_items_from_category(cat_id):
         return jsonify({'message': 'Category could not be found.'}), 404
     items = ItemModel.query.filter_by(cat_id=cat_id).all()
     result = items_schema.dump(items)
-    return jsonify({'items': result}), 200
+    return jsonify({'items': result.data}), 200
 
 
 # Create an item to a category
 @app.route('/categories/<int:cat_id>/items', methods=['POST'])
-def create_item_to_category(user_id, cat_id):
+def create_item_to_category(cat_id):
+    user_id = 1
     json_data = request.get_json()
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
@@ -39,7 +47,7 @@ def create_item_to_category(user_id, cat_id):
     except IntegrityError:
         return jsonify({'message': 'Category could not be found.'}), 404
 
-    title, description = data['title'], data['description']
+    title, description = data[0]['title'], data[0]['description']
     item = ItemModel(title, description, cat_id, user_id)
     item.save_to_db()
     return jsonify({'message': 'Created item successfully.'}), 201

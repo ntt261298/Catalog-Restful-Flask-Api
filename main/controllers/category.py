@@ -1,5 +1,4 @@
 from flask import jsonify, request
-from flask_jwt import jwt_required
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 from main import app
@@ -16,24 +15,26 @@ def get_all_categories():
     categories = CategoryModel.query.all()
     # Serialize the queryset
     results = categories_schema.dump(categories)
-    return jsonify({'categories': results}), 200
+    return jsonify({'categories': results.data}), 200
 
 
 # Get category by id
 @app.route('/categories/<int:cat_id>', methods=['GET'])
 def get_category(cat_id):
-    try:
-        category = CategoryModel.query.get(cat_id)
-    except IntegrityError:
+    category = CategoryModel.query.get(cat_id)
+    app.logger.info(category)
+
+    if category is None:
         return jsonify({'message': 'Category could not be found.'}), 404
     result = category_schema.dump(category)
-    return jsonify({'item': result}), 200
+    return jsonify({'category': result.data}), 200
 
 
 # Create new category
 @app.route('/categories', methods=['POST'])
 def create_category():
     json_data = request.get_json()
+    app.logger.info(json_data)
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
@@ -41,8 +42,8 @@ def create_category():
         data = category_schema.load(json_data)
     except ValidationError as err:
         return jsonify(err.messages), 422
-    name = data['name']
-    category = CategoryModel.query.get(name)
+    name = data[0]['name']
+    category = CategoryModel.query.filter_by(name=name).first()
 
     if category:
         return jsonify({'message': 'Category already exists.'}), 400
@@ -67,7 +68,7 @@ def update_category(cat_id):
     except IntegrityError:
         return jsonify({'message': 'Category could not be found.'}), 404
 
-    category.name = data['name']
+    category.name = data[0]['name']
     category.save_to_db()
     return jsonify({'message': 'Updated category successfully.'}), 200
 
@@ -81,6 +82,3 @@ def delete_category(cat_id):
         return jsonify({'message': 'Category could not be found.'}), 404
     category.delete_from_db()
     return jsonify({'message': 'Deleted category Successfully'}), 200
-
-
-

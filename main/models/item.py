@@ -10,6 +10,8 @@ class ItemModel(db.Model):
     cat_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='CASCADE'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
 
+    # category = db.relationship('CategoryModel')
+
     def __init__(self, title, description, cat_id, user_id):
         self.title = title
         self.description = description
