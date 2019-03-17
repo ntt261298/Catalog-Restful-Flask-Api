@@ -1,8 +1,10 @@
 from flask import jsonify, request
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from main import app
 from main.models.category import CategoryModel
+from main.models.user import UserModel
 from main.models.item import ItemModel
 from main.schemas.item import ItemSchema
 
@@ -32,6 +34,7 @@ def get_items_from_category(cat_id):
 
 # Create an item to a category
 @app.route('/categories/<int:cat_id>/items', methods=['POST'])
+@jwt_required
 def create_item_to_category(cat_id):
     user_id = 1
     json_data = request.get_json()
@@ -55,7 +58,13 @@ def create_item_to_category(cat_id):
 
 # Update existed item
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['PUT'])
-def update_item_from_category(user_id, cat_id, item_id):
+@jwt_required
+def update_item_from_category(cat_id, item_id):
+    # Get user from JWT token
+    current_user = get_jwt_identity()
+    user_id = UserModel.query.filter_by(username=current_user).first().id
+    app.logger.info(user_id)
+
     json_data = request.get_json()
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
@@ -64,9 +73,7 @@ def update_item_from_category(user_id, cat_id, item_id):
         data = item_schema.load(json_data)
     except ValidationError as err:
         return jsonify(err.messages), 422
-    try:
-        CategoryModel.query.get(cat_id)
-    except IntegrityError:
+    if CategoryModel.query.get(cat_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
     item = ItemModel.query.get(item_id)
@@ -76,14 +83,15 @@ def update_item_from_category(user_id, cat_id, item_id):
     else:
         return jsonify({'message': 'Item could not be found'}), 404
 
-    item.title = data['title']
-    item.description = data['description']
+    item.title = data[0]['title']
+    item.description = data[0]['description']
     item.save_to_db()
     return jsonify({'message': 'Updated item successfully.'}), 200
 
 
 # Delete existed item
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['DELETE'])
+@jwt_required
 def delete_item_from_category(user_id, cat_id, item_id):
     try:
         CategoryModel.query.get(cat_id)
