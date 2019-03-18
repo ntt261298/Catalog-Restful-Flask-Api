@@ -1,5 +1,4 @@
 from flask import jsonify, request
-from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from main import app
@@ -23,9 +22,7 @@ def get_items():
 # Get all items from a category
 @app.route('/categories/<int:cat_id>/items', methods=['GET'])
 def get_items_from_category(cat_id):
-    try:
-        CategoryModel.query.get(cat_id)
-    except IntegrityError:
+    if CategoryModel.query.get(cat_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
     items = ItemModel.query.filter_by(cat_id=cat_id).all()
     result = items_schema.dump(items)
@@ -36,7 +33,6 @@ def get_items_from_category(cat_id):
 @app.route('/categories/<int:cat_id>/items', methods=['POST'])
 @jwt_required
 def create_item_to_category(cat_id):
-    user_id = 1
     json_data = request.get_json()
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
@@ -45,10 +41,12 @@ def create_item_to_category(cat_id):
         data = item_schema.load(json_data)
     except ValidationError as err:
         return jsonify(err.messages), 422
-    try:
-        CategoryModel.query.get(cat_id)
-    except IntegrityError:
+    if CategoryModel.query.get(cat_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
+
+    # Get user from JWT token
+    current_user = get_jwt_identity()
+    user_id = UserModel.query.filter_by(username=current_user).first().id
 
     title, description = data[0]['title'], data[0]['description']
     item = ItemModel(title, description, cat_id, user_id)
@@ -60,11 +58,6 @@ def create_item_to_category(cat_id):
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['PUT'])
 @jwt_required
 def update_item_from_category(cat_id, item_id):
-    # Get user from JWT token
-    current_user = get_jwt_identity()
-    user_id = UserModel.query.filter_by(username=current_user).first().id
-    app.logger.info(user_id)
-
     json_data = request.get_json()
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
@@ -75,6 +68,11 @@ def update_item_from_category(cat_id, item_id):
         return jsonify(err.messages), 422
     if CategoryModel.query.get(cat_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
+
+    # Get user from JWT token
+    current_user = get_jwt_identity()
+    user_id = UserModel.query.filter_by(username=current_user).first().id
+    app.logger.info(user_id)
 
     item = ItemModel.query.get(item_id)
     if item:
@@ -92,11 +90,15 @@ def update_item_from_category(cat_id, item_id):
 # Delete existed item
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['DELETE'])
 @jwt_required
-def delete_item_from_category(user_id, cat_id, item_id):
-    try:
-        CategoryModel.query.get(cat_id)
-    except IntegrityError:
+def delete_item_from_category(cat_id, item_id):
+
+    if CategoryModel.query.get(cat_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
+
+    # Get user from JWT token
+    current_user = get_jwt_identity()
+    user_id = UserModel.query.filter_by(username=current_user).first().id
+    app.logger.info(user_id)
 
     item = ItemModel.query.get(item_id)
     if item:

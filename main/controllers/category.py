@@ -1,5 +1,4 @@
 from flask import jsonify, request
-from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 from main import app
 from main.models.category import CategoryModel
@@ -47,6 +46,7 @@ def create_category():
 
     if category:
         return jsonify({'message': 'Category already exists.'}), 400
+
     category = CategoryModel(name)
     category.save_to_db()
     return jsonify({'message': 'Created category successfully.'}), 201
@@ -63,9 +63,9 @@ def update_category(cat_id):
         data = category_schema.load(json_data)
     except ValidationError as err:
         return jsonify(err.messages), 422
-    try:
-        category = CategoryModel.query.get(cat_id)
-    except IntegrityError:
+
+    category = CategoryModel.query.get(cat_id)
+    if category is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
     category.name = data[0]['name']
@@ -76,9 +76,9 @@ def update_category(cat_id):
 # Delete existed category
 @app.route('/categories/<int:cat_id>', methods=['DELETE'])
 def delete_category(cat_id):
-    try:
-        category = CategoryModel.query.get(cat_id)
-    except IntegrityError:
+    category = CategoryModel.query.get(cat_id)
+    if category is None:
         return jsonify({'message': 'Category could not be found.'}), 404
+
     category.delete_from_db()
     return jsonify({'message': 'Deleted category Successfully'}), 200
