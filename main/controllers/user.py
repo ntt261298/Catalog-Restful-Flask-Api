@@ -4,9 +4,12 @@ from marshmallow import ValidationError
 from main import app
 from main.models.user import UserModel
 from main.schemas.user import UserSchema
-from flask_jwt_extended import create_access_token, create_refresh_token
+from main.models.item import ItemModel
+from main.schemas.item import ItemSchema
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 user_schema = UserSchema()
+items_schema = ItemSchema(many=True)
 
 
 # Register user
@@ -64,3 +67,16 @@ def auth_user():
                         'refresh_token': refresh_token
                         }), 200
     return jsonify({'message': 'Wrong credentials.'}), 404
+
+
+# Get all user's items
+@app.route('/users/items', methods=['GET'])
+@jwt_required
+def user_items():
+    # Get user from JWT token
+    current_user = get_jwt_identity()
+    user_id = UserModel.query.filter_by(username=current_user).first().id
+
+    items = ItemModel.query.filter_by(user_id=user_id).all()
+    result = items_schema.dump(items)
+    return jsonify({'items': result.data}), 200
