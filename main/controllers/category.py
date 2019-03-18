@@ -38,10 +38,10 @@ def create_category():
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
     try:
-        data = category_schema.load(json_data)
+        data = category_schema.load(json_data).data
     except ValidationError as err:
         return jsonify(err.messages), 422
-    name = data[0]['name']
+    name = data['name']
     category = CategoryModel.query.filter_by(name=name).first()
 
     if category:
@@ -60,7 +60,7 @@ def update_category(cat_id):
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
     try:
-        data = category_schema.load(json_data)
+        data = category_schema.load(json_data).data
     except ValidationError as err:
         return jsonify(err.messages), 422
 
@@ -68,7 +68,7 @@ def update_category(cat_id):
     if category is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
-    category.name = data[0]['name']
+    category.name = data['name']
     category.save_to_db()
     return jsonify({'message': 'Updated category successfully.'}), 200
 

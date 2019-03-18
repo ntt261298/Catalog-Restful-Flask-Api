@@ -38,7 +38,7 @@ def create_item_to_category(cat_id):
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
     try:
-        data = item_schema.load(json_data)
+        data = item_schema.load(json_data).data
     except ValidationError as err:
         return jsonify(err.messages), 422
     if CategoryModel.query.get(cat_id) is None:
@@ -48,7 +48,7 @@ def create_item_to_category(cat_id):
     current_user = get_jwt_identity()
     user_id = UserModel.query.filter_by(username=current_user).first().id
 
-    title, description = data[0]['title'], data[0]['description']
+    title, description = data['title'], data['description']
     item = ItemModel(title, description, cat_id, user_id)
     item.save_to_db()
     return jsonify({'message': 'Created item successfully.'}), 201
@@ -63,7 +63,7 @@ def update_item_from_category(cat_id, item_id):
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
     try:
-        data = item_schema.load(json_data)
+        data = item_schema.load(json_data).data
     except ValidationError as err:
         return jsonify(err.messages), 422
     if CategoryModel.query.get(cat_id) is None:
@@ -81,8 +81,8 @@ def update_item_from_category(cat_id, item_id):
     else:
         return jsonify({'message': 'Item could not be found'}), 404
 
-    item.title = data[0]['title']
-    item.description = data[0]['description']
+    item.title = data['title']
+    item.description = data['description']
     item.save_to_db()
     return jsonify({'message': 'Updated item successfully.'}), 200
 
@@ -91,7 +91,6 @@ def update_item_from_category(cat_id, item_id):
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['DELETE'])
 @jwt_required
 def delete_item_from_category(cat_id, item_id):
-
     if CategoryModel.query.get(cat_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
