@@ -1,4 +1,5 @@
 from main import app
+import main.controllers
 from main.authenticate.security import bcrypt
 from database.db import db
 
