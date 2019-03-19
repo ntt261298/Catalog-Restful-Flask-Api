@@ -12,15 +12,17 @@ user_schema = UserSchema()
 items_schema = ItemSchema(many=True)
 
 
-# Register user
 @app.route('/users', methods=['POST'])
 def register_user():
+    """
+    :return: Register user and return access token, refresh token if success
+    """
     json_data = request.get_json()
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
     try:
-        data = user_schema.load(json_data)
+        data = user_schema.load(json_data).data
     except ValidationError as err:
         return jsonify(err.messages), 422
 
@@ -29,39 +31,41 @@ def register_user():
         return jsonify({'message': 'User already exists'}), 400
     # Create new user with hash password
     new_user = UserModel(
-        username=data[0]['username'],
-        password=UserModel.generate_hash(data[0]['password'])
+        username=data['username'],
+        password=UserModel.generate_hash(data['password'])
     )
     try:
         new_user.save_to_db()
     except IntegrityError:
         return jsonify({'message': 'Something went wrong.'}), 500
     # Create access token
-    access_token = create_access_token(identity=data[0]['username'])
-    refresh_token = create_refresh_token(identity=data[0]['username'])
+    access_token = create_access_token(identity=data['username'])
+    refresh_token = create_refresh_token(identity=data['username'])
     return jsonify({'message': 'Created user successfully.',
                     'access_token': access_token,
                     'refresh_token': refresh_token
                     }), 201
 
 
-# Authenticate user
 @app.route('/users/auth', methods=['POST'])
 def auth_user():
+    """
+    :return: Authenticate user successful or fail
+    """
     json_data = request.get_json()
     if not json_data:
         return jsonify({'message': 'No input data provided.'}), 400
     # Validate and deserialize input
     try:
-        data = user_schema.load(json_data)
+        data = user_schema.load(json_data).data
     except ValidationError as err:
         return jsonify(err.messages), 422
 
-    user = UserModel.find_user_by_username(data[0]['username'])
+    user = UserModel.find_user_by_username(data['username'])
     # Verify user
-    if user and user.verify_hash(user.password, data[0]['password']):
-        access_token = create_access_token(identity=data[0]['username'])
-        refresh_token = create_refresh_token(identity=data[0]['username'])
+    if user and user.verify_hash(user.password, data['password']):
+        access_token = create_access_token(identity=data['username'])
+        refresh_token = create_refresh_token(identity=data['username'])
         return jsonify({'message': 'Logged in as {}.'.format(user.username),
                         'access_token': access_token,
                         'refresh_token': refresh_token
@@ -69,10 +73,12 @@ def auth_user():
     return jsonify({'message': 'Wrong credentials.'}), 404
 
 
-# Get all user's items
 @app.route('/users/items', methods=['GET'])
 @jwt_required
 def user_items():
+    """
+    :return: All user's items
+    """
     # Get user from JWT token
     current_user = get_jwt_identity()
     user_id = UserModel.query.filter_by(username=current_user).first().id
