@@ -35,15 +35,12 @@ class DevelopmentConfig(Base):
 
 class TestingConfig(Base):
     ENV = 'testing'
-    DEBUG = False
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "mysql://root:123456@localhost/catalog-api-test"
 
 
 class ProductionConfig(Base):
     ENV = 'production'
-    DEBUG = False
-    TESTING = False
     SQLALCHEMY_DATABASE_URI = "mysql://root:123456@localhost/catalog-api"
 
 
