@@ -64,6 +64,7 @@ def create_item_to_category(cat_id):
     # Validate and deserialize input
     try:
         data = item_schema.load(json_data).data
+        app.logger.info(item_schema.load(json_data))
     except ValidationError as err:
         return jsonify(err.messages), 422
     if CategoryModel.query.get(cat_id) is None:

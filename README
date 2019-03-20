@@ -20,3 +20,6 @@ python run.py
 python test_catalog_api.py
 
 # Migrate SQLAlchemy Database
+python manage.py db init
+python manage.py db migrate
+python manage.py db upgrade

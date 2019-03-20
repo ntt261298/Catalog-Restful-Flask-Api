@@ -27,10 +27,11 @@ def register_user():
     # Validate and deserialize input
     try:
         data = user_schema.load(json_data).data
+        app.logger.info(user_schema.load(json_data).errors)
     except ValidationError as err:
         return jsonify(err.messages), 422
 
-    user = UserModel.query.filter_by(username=data[0]['username']).first()
+    user = UserModel.query.filter_by(username=data['username']).first()
     if user:
         return jsonify({'message': 'User already exists'}), 400
     # Create new user with hash password
