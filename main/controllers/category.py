@@ -1,5 +1,6 @@
 from flask import jsonify, request
 from marshmallow import ValidationError
+
 from main import app
 from main.models.category import CategoryModel
 from main.schemas.category import CategorySchema

@@ -1,13 +1,15 @@
-# project/test_catalog_api.py
+# Project/test_catalog_api.py
+import os
 import unittest
+
 import requests
 from flask import json
-from base64 import b64encode
-from database.db import db
-from main import app
+
+from main import app, db
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
 from main.models.user import UserModel
+from config import app_config
 import main.controllers
 
 
@@ -19,10 +21,7 @@ class CatalogApiTests(unittest.TestCase):
     # Executed prior to each test
     def setUp(self):
         with app.app_context():
-            app.config['TESTING'] = True
-            app.config['WTF_CSRF_ENABLED'] = False
-            app.config['DEBUG'] = False
-            app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:123456@localhost/catalog-api-test'
+            app.config.from_object(app_config['testing'])
             self.app = app.test_client()
             db.drop_all()
             db.create_all()
@@ -52,10 +51,21 @@ class CatalogApiTests(unittest.TestCase):
         user1 = UserModel.query.filter_by(username=self.username).first()
         cat1 = CategoryModel.query.filter_by(name=self.cat_name).first()
 
-        item1 = ItemModel('Hamburgers', 'Classic dish elevated with pretzel buns.', cat1.id, user1.id)
-        item2 = ItemModel('Mediterranean Chicken', 'Grilled chicken served with pitas and hummus', cat1.id, user1.id)
-        item3 = ItemModel('Tacos', 'Ground beef tacos with grilled peppers.', cat1.id, user1.id)
-        item4 = ItemModel('Homemade Pizza', 'Homemade pizza made using pizza oven', cat1.id, user1.id)
+        item1 = ItemModel('Hamburgers',
+                          'Classic dish elevated with pretzel buns.',
+                          cat1.id,
+                          user1.id)
+        item2 = ItemModel('Mediterranean Chicken',
+                          'Grilled chicken served with pitas and hummus',
+                          cat1.id,
+                          user1.id)
+        item3 = ItemModel('Tacos', 'Ground beef tacos with grilled peppers.',
+                          cat1.id,
+                          user1.id)
+        item4 = ItemModel('Homemade Pizza',
+                          'Homemade pizza made using pizza oven',
+                          cat1.id,
+                          user1.id)
         db.session.add(item1)
         db.session.add(item2)
         db.session.add(item3)
@@ -63,19 +73,20 @@ class CatalogApiTests(unittest.TestCase):
         db.session.commit()
 
     def authenticate_user(self, username, password):
-        # auth = 'Bearer ' + b64encode((username + ':' + password).encode('utf-8')).decode('utf-8')
-        auth = self.get_user_token()
         headers = {}
-        headers['Authorization'] = auth
         headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
-        return self.app.get('/users/auth', headers=headers)
+        response = requests.post('http://127.0.0.1:5000/users/auth',
+                                 data=json.dumps({"username": username,
+                                                  "password": password}),
+                                 headers=headers)
+        return response
 
     def get_headers_authenticated_user(self):
         headers = {}
         headers['Content-Type'] = 'application/json'
         response = requests.post('http://127.0.0.1:5000/users/auth',
-                                 data=json.dumps({"username": self.username, "password": self.password}),
+                                 data=json.dumps({"username": self.username,
+                                                  "password": self.password}),
                                  headers=headers).json()
         headers = {}
         headers['Authorization'] = "Bearer " + response['access_token']
@@ -83,34 +94,22 @@ class CatalogApiTests(unittest.TestCase):
         return headers
 
     # Test
-    def test_items_api_invalid_authentication_user(self):
-        response = self.authenticate_user(self.username, self.password)
-        json_data = json.loads(response.data.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 401)
-        self.assertIn('unauthorized', json_data['error'])
-        self.assertIn('please authenticate', json_data['message'])
-
     def test_items_api_invalid_authentication_invalid_user(self):
         response = self.authenticate_user(self.username, 'FlaskIsOK')
-        json_data = json.loads(response.data.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 401)
-        self.assertIn('unauthorized', json_data['error'])
-        self.assertIn('please authenticate', json_data['message'])
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Wrong credentials.', response.json()['message'])
 
     def test_items_api_invalid_token(self):
         headers = {}
-        response = self.authenticate_user(self.username, self.password)
-        json_data = json.loads(response.data.decode('utf-8'))
         token = 'InvalidTokenInvalidToken'
-        auth = 'Bearer ' + b64encode((token + ':' + 'unused').encode('utf-8')).decode('utf-8')
+        auth = 'Bearer ' + token
         headers['Authorization'] = auth
         headers['Content-Type'] = 'application/json'
         headers['Accept'] = 'application/json'
-        response = self.app.get('/users/auth', headers=headers)
+        response = self.app.post('/users/auth', headers=headers)
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 400)
 
     def test_items_api_get_all_items(self):
         response = self.app.get('/items')
@@ -118,10 +117,9 @@ class CatalogApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_items_api_create_new_item(self):
-        cat_id = CategoryModel.query.filter_by(name=self.cat_name).first()
         headers = self.get_headers_authenticated_user()
         json_data = {'title': 'Tacos2', 'description': 'My favorite tacos!'}
-        response = self.app.post('/categories/{}/items'.format(cat_id),
+        response = self.app.post('/categories/1/items',
                                  data=json.dumps(json_data),
                                  headers=headers,
                                  follow_redirects=True)
@@ -131,11 +129,11 @@ class CatalogApiTests(unittest.TestCase):
     def test_items_api_get_individual_item_valid(self):
         headers = self.get_headers_authenticated_user()
         response = self.app.get('/categories/1/items/1', headers=headers)
-        json_data = response.json()
+        json_data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Hamburgers', json_data['title'])
-        self.assertIn('Classic dish elevated with pretzel buns.', json_data['description'])
-        self.assertIn('/category/1/items/1', json_data['self_url'])
+        self.assertIn('Hamburgers', json_data['item']['title'])
+        self.assertIn('Classic dish elevated with pretzel buns.',
+                      json_data['item']['description'])
 
     def test_items_api_get_individual_item_invalid(self):
         headers = self.get_headers_authenticated_user()
@@ -147,13 +145,17 @@ class CatalogApiTests(unittest.TestCase):
 
     def test_items_api_delete_item_valid(self):
         headers = self.get_headers_authenticated_user()
-        response = self.app.delete('/categories/1/items/2', headers=headers, follow_redirects=True)
+        response = self.app.delete('/categories/1/items/2',
+                                   headers=headers,
+                                   follow_redirects=True)
 
         self.assertEqual(response.status_code, 200)
 
     def test_items_api_delete_item_invalid(self):
         headers = self.get_headers_authenticated_user()
-        response = self.app.delete('/categories/1/items/16', headers=headers, follow_redirects=True)
+        response = self.app.delete('/categories/1/items/16',
+                                   headers=headers,
+                                   follow_redirects=True)
         json_data = json.loads(response.data.decode('utf-8'))
 
         self.assertEqual(response.status_code, 404)
@@ -161,7 +163,8 @@ class CatalogApiTests(unittest.TestCase):
 
     def test_items_api_put_item_valid(self):
         headers = self.get_headers_authenticated_user()
-        json_data = {'title': 'Updated item', 'description': 'My favorite item'}
+        json_data = {'title': 'Updated item',
+                     'description': 'My favorite item'}
         response = self.app.put('/categories/1/items/3',
                                 data=json.dumps(json_data),
                                 headers=headers,
@@ -174,7 +177,8 @@ class CatalogApiTests(unittest.TestCase):
 
     def test_items_api_put_item_invalid(self):
         headers = self.get_headers_authenticated_user()
-        json_data_input = {'title': 'Updated item', 'description': 'My favorite item'}
+        json_data_input = {'title': 'Updated item',
+                           'description': 'My favorite item'}
         response = self.app.put('/categories/1/items/15',
                                 data=json.dumps(json_data_input),
                                 headers=headers,
@@ -183,23 +187,6 @@ class CatalogApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertIn('Item could not be found.', json_data['message'])
-
-    def test_items_api_check_etag(self):
-        headers = self.get_headers_authenticated_user()
-        response = self.app.get('/categories/1/items', headers=headers)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(response.headers['ETag'])
-        etag = response.headers['ETag']
-        headers['If-None-Match'] = etag
-        response2 = self.app.get('/categories/1/items', headers=headers)
-
-        self.assertEqual(response2.status_code, 304)
-
-        headers['If-None-Match'] = 'asfjskdjflakdsjflsdkfjsdlkfj'  # INVALID
-        response3 = self.app.get('/categories/1/items', headers=headers)
-
-        self.assertEqual(response3.status_code, 200)
 
 
 if __name__ == "__main__":

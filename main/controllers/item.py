@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from marshmallow import ValidationError
 from flask_jwt_extended import jwt_required, get_jwt_identity
+
 from main import app
 from main.models.category import CategoryModel
 from main.models.user import UserModel
@@ -50,7 +51,6 @@ def get_item_from_category(cat_id, item_id):
     return jsonify({'item': result.data}), 200
 
 
-# Create an item to a category
 @app.route('/categories/<int:cat_id>/items', methods=['POST'])
 @jwt_required
 def create_item_to_category(cat_id):
@@ -79,7 +79,6 @@ def create_item_to_category(cat_id):
     return jsonify({'message': 'Created item successfully.'}), 201
 
 
-# Update existed item
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['PUT'])
 @jwt_required
 def update_item_from_category(cat_id, item_id):
@@ -116,7 +115,6 @@ def update_item_from_category(cat_id, item_id):
     return jsonify({'message': 'Updated item successfully.'}), 200
 
 
-# Delete existed item
 @app.route('/categories/<int:cat_id>/items/<int:item_id>', methods=['DELETE'])
 @jwt_required
 def delete_item_from_category(cat_id, item_id):

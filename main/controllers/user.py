@@ -1,12 +1,16 @@
 from flask import jsonify, request
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
+from flask_jwt_extended import create_access_token, \
+    create_refresh_token, \
+    jwt_required, \
+    get_jwt_identity
+
 from main import app
 from main.models.user import UserModel
 from main.schemas.user import UserSchema
 from main.models.item import ItemModel
 from main.schemas.item import ItemSchema
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 user_schema = UserSchema()
 items_schema = ItemSchema(many=True)

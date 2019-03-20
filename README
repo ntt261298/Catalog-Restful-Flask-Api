@@ -1,0 +1,22 @@
+# Installation
+
+# Create a virtual environment
+virtualenv env
+# Activate virtual env
+source env/bin/activate
+
+# Install requirements
+pip install -r requirements.txt
+
+# Choose environment
+export ENV=development # for dev environment (default)
+export ENV=production # for pro environment
+export ENV=testing # for test environment
+
+# Run Flask api
+python run.py
+
+# Run Test Unit
+python test_catalog_api.py
+
+# Migrate SQLAlchemy Database

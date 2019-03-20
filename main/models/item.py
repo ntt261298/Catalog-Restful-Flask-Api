@@ -7,8 +7,10 @@ class ItemModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500))
     description = db.Column(db.String(5000))
-    cat_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    cat_id = db.Column(db.Integer, db.ForeignKey('categories.id',
+                                                 ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id',
+                                                  ondelete='CASCADE'))
 
     # category = db.relationship('CategoryModel')
 
