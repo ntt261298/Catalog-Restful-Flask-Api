@@ -1,19 +1,14 @@
 from flask import jsonify, request
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
-from flask_jwt_extended import create_access_token, \
-    create_refresh_token, \
-    jwt_required, \
-    get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token
 
 from main import app
 from main.models.user import UserModel
 from main.schemas.user import UserSchema
-from main.models.item import ItemModel
-from main.schemas.item import ItemSchema
+from main.libs.bcrypt_hash import generate_hash, verify_hash
 
 user_schema = UserSchema()
-items_schema = ItemSchema(many=True)
 
 
 @app.route('/users', methods=['POST'])
@@ -37,7 +32,7 @@ def register_user():
     # Create new user with hash password
     new_user = UserModel(
         username=data['username'],
-        password=UserModel.generate_hash(data['password'])
+        password=generate_hash(data['password'])
     )
     try:
         new_user.save_to_db()
@@ -68,7 +63,7 @@ def auth_user():
 
     user = UserModel.find_user_by_username(data['username'])
     # Verify user
-    if user and user.verify_hash(user.password, data['password']):
+    if user and verify_hash(user.password, data['password']):
         access_token = create_access_token(identity=data['username'])
         refresh_token = create_refresh_token(identity=data['username'])
         return jsonify({'message': 'Logged in as {}.'.format(user.username),
@@ -76,18 +71,3 @@ def auth_user():
                         'refresh_token': refresh_token
                         }), 200
     return jsonify({'message': 'Wrong credentials.'}), 404
-
-
-@app.route('/users/items', methods=['GET'])
-@jwt_required
-def user_items():
-    """
-    :return: All user's items
-    """
-    # Get user from JWT token
-    current_user = get_jwt_identity()
-    user_id = UserModel.query.filter_by(username=current_user).first().id
-
-    items = ItemModel.query.filter_by(user_id=user_id).all()
-    result = items_schema.dump(items)
-    return jsonify({'items': result.data}), 200
