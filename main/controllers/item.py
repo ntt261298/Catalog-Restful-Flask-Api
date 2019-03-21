@@ -7,7 +7,7 @@ from main.models.category import CategoryModel
 from main.models.user import UserModel
 from main.models.item import ItemModel
 from main.schemas.item import ItemSchema
-from database.db import db
+from main.libs.database import db
 
 item_schema = ItemSchema()
 items_schema = ItemSchema(many=True)

@@ -7,7 +7,7 @@ from main import app
 from main.models.user import UserModel
 from main.schemas.user import UserSchema
 from main.libs.bcrypt_hash import generate_hash, verify_hash
-from database.db import db
+from main.libs.database import db
 
 user_schema = UserSchema()
 

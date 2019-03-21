@@ -3,8 +3,8 @@ import os
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from main.authenticate.security import bcrypt
-from database.db import db
+from main.libs.bcrypt_hash import bcrypt
+from main.libs.database import db
 from config import app_config
 
 app = Flask(__name__)

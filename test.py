@@ -1,4 +1,4 @@
-# Project/test_catalog_api.py
+# Project/test.py
 import unittest
 
 import requests
