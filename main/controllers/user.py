@@ -7,6 +7,7 @@ from main import app
 from main.models.user import UserModel
 from main.schemas.user import UserSchema
 from main.libs.bcrypt_hash import generate_hash, verify_hash
+from database.db import db
 
 user_schema = UserSchema()
 
@@ -36,6 +37,7 @@ def register_user():
     )
     try:
         new_user.save_to_db()
+        db.session.commit()
     except IntegrityError:
         return jsonify({'message': 'Something went wrong.'}), 500
     # Create access token

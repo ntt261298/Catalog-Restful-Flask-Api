@@ -7,6 +7,7 @@ from main.models.category import CategoryModel
 from main.models.user import UserModel
 from main.models.item import ItemModel
 from main.schemas.item import ItemSchema
+from database.db import db
 
 item_schema = ItemSchema()
 items_schema = ItemSchema(many=True)
@@ -77,6 +78,7 @@ def create_item_to_category(cat_id):
     title, description = data['title'], data['description']
     item = ItemModel(title, description, cat_id, user_id)
     item.save_to_db()
+    db.session.commit()
     return jsonify({'message': 'Created item successfully.'}), 201
 
 
@@ -113,6 +115,7 @@ def update_item_from_category(cat_id, item_id):
     item.title = data['title']
     item.description = data['description']
     item.save_to_db()
+    db.session.commit()
     return jsonify({'message': 'Updated item successfully.'}), 200
 
 
@@ -139,4 +142,5 @@ def delete_item_from_category(cat_id, item_id):
         return jsonify({'message': 'Permission denied.'}), 550
 
     item.delete_from_db()
+    db.session.commit()
     return jsonify({'message': 'Deleted item successfully.'}), 200
