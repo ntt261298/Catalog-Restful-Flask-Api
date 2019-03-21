@@ -6,8 +6,8 @@ class UserModel(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(500))
-    password = db.Column(db.String(500))
+    username = db.Column(db.String(500), nullable=False)
+    password = db.Column(db.String(500), nullable=False)
     items = db.relationship('ItemModel',
                             lazy='dynamic',
                             cascade='all, delete-orphan')
@@ -19,10 +19,6 @@ class UserModel(db.Model):
     @classmethod
     def find_user_by_username(cls, username):
         return cls.query.filter_by(username=username).first()
-
-    @classmethod
-    def find_user_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
 
     @staticmethod
     def generate_hash(password):

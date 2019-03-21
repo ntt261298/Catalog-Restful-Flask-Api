@@ -135,6 +135,11 @@ class CatalogApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 405)
 
+    def test_catalog_api_get_all_categories(self):
+        response = self.app.get('/items')
+
+        self.assertEqual(response.status_code, 200)
+
     def test_catalog_api_get_all_items(self):
         response = self.app.get('/items')
 
