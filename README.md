@@ -23,7 +23,7 @@ export ENV=testing # for test environment
 `python run.py`
 
 ### Run Test Unit
-`python test.py`
+`python -m unittest discover`
 
 ### Migrate SQLAlchemy Database
 ```

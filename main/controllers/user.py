@@ -1,6 +1,5 @@
-from flask import jsonify, request
+from flask import jsonify
 from sqlalchemy.exc import IntegrityError
-from marshmallow import ValidationError
 from flask_jwt_extended import create_access_token
 
 from main import app
@@ -8,25 +7,18 @@ from main.models.user import UserModel
 from main.schemas.user import UserSchema
 from main.libs.bcrypt_hash import generate_hash, verify_hash
 from main.libs.database import db
+from main.libs.check_data import check_data
 
 user_schema = UserSchema()
 
 
 @app.route('/users', methods=['POST'])
-def register_user():
+@check_data(user_schema)
+def register_user(data):
     """
+    :param data:
     :return: Register user and return access token, refresh token if success
     """
-    json_data = request.get_json()
-    if not json_data:
-        return jsonify({'message': 'No input data provided.'}), 400
-    # Validate and deserialize input
-    try:
-        data = user_schema.load(json_data).data
-        app.logger.info(user_schema.load(json_data).errors)
-    except ValidationError as err:
-        return jsonify(err.messages), 422
-
     user = UserModel.query.filter_by(username=data['username']).first()
     if user:
         return jsonify({'message': 'User already exists'}), 400
@@ -48,19 +40,12 @@ def register_user():
 
 
 @app.route('/users/auth', methods=['POST'])
-def authenticate_user():
+@check_data(user_schema)
+def authenticate_user(data):
     """
+    :param data:
     :return: Authenticate user successful or fail
     """
-    json_data = request.get_json()
-    if not json_data:
-        return jsonify({'message': 'No input data provided.'}), 400
-    # Validate and deserialize input
-    try:
-        data = user_schema.load(json_data).data
-    except ValidationError as err:
-        return jsonify(err.messages), 422
-
     user = UserModel.find_user_by_username(data['username'])
     # Verify user
     if user and verify_hash(user.password, data['password']):

@@ -35,15 +35,17 @@ class CatalogApiTests(unittest.TestCase):
 
     # Helper methods
     def create_users(self):
-        # Create a new user 
+        # Create a new user
         new_user = UserModel(self.username, self.password)
         new_user.save_to_db()
+        db.session.commit()
         return
 
     def create_categories(self):
         # Create a new category
         new_category = CategoryModel(self.cat_name)
-        new_category.save_to_db()
+        db.session.add(new_category)
+        db.session.commit()
         return
 
     def create_items(self):

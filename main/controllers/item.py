@@ -1,5 +1,4 @@
-from flask import jsonify, request
-from marshmallow import ValidationError
+from flask import jsonify
 
 from main import app
 from main.models.category import CategoryModel
@@ -7,6 +6,7 @@ from main.models.item import ItemModel
 from main.schemas.item import ItemSchema
 from main.libs.database import db
 from main.libs.auth_user import auth_user
+from main.libs.check_data import check_data
 
 item_schema = ItemSchema()
 items_schema = ItemSchema(many=True)
@@ -19,6 +19,7 @@ def get_items():
     """
     items = ItemModel.query.all()
     result = items_schema.dump(items)
+
     return jsonify({'items': result.data}), 200
 
 
@@ -30,8 +31,10 @@ def get_items_from_category(category_id):
     """
     if CategoryModel.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
+
     items = ItemModel.query.filter_by(category_id=category_id).all()
     result = items_schema.dump(items)
+
     return jsonify({'items': result.data}), 200
 
 
@@ -47,28 +50,23 @@ def get_item_from_category(category_id, item_id):
         return jsonify({'message': 'Category could not be found.'}), 404
     if ItemModel.query.get(item_id) is None:
         return jsonify({'message': 'Item could not be found.'}), 404
+
     item = ItemModel.query.get(item_id)
     result = item_schema.dump(item)
+
     return jsonify({'item': result.data}), 200
 
 
 @app.route('/categories/<int:category_id>/items', methods=['POST'])
 @auth_user
-def create_item_to_category(user_id, category_id):
+@check_data(item_schema)
+def create_item_to_category(data, user_id, category_id):
     """
+    :param data:
     :param user_id:
     :param category_id:
     :return: Created an item to a category successful or fail
     """
-    json_data = request.get_json()
-    if not json_data:
-        return jsonify({'message': 'No input data provided.'}), 400
-    # Validate and deserialize input
-    try:
-        data = item_schema.load(json_data).data
-        app.logger.info(item_schema.load(json_data))
-    except ValidationError as err:
-        return jsonify(err.messages), 422
     if CategoryModel.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
@@ -76,30 +74,24 @@ def create_item_to_category(user_id, category_id):
     item = ItemModel(title, description, category_id, user_id)
     item.save_to_db()
     db.session.commit()
+
     return jsonify({'message': 'Created item successfully.'}), 201
 
 
 @app.route('/categories/<int:category_id>/items/<int:item_id>',
            methods=['PUT'])
 @auth_user
-def update_item_from_category(user_id, category_id, item_id):
+@check_data(item_schema)
+def update_item_from_category(data, user_id, category_id, item_id):
     """
+    :param data:
     :param user_id:
     :param category_id:
     :param item_id:
     :return: Updated existed item successful or fail
     """
-    json_data = request.get_json()
-    if not json_data:
-        return jsonify({'message': 'No input data provided.'}), 400
-    # Validate and deserialize input
-    try:
-        data = item_schema.load(json_data).data
-    except ValidationError as err:
-        return jsonify(err.messages), 422
     if CategoryModel.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
-
     item = ItemModel.query.get(item_id)
     if item is None:
         return jsonify({'message': 'Item could not be found.'}), 404
@@ -110,6 +102,7 @@ def update_item_from_category(user_id, category_id, item_id):
     item.description = data['description']
     item.save_to_db()
     db.session.commit()
+
     return jsonify({'message': 'Updated item successfully.'}), 200
 
 
@@ -125,7 +118,6 @@ def delete_item_from_category(user_id, category_id, item_id):
     """
     if CategoryModel.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
-
     item = ItemModel.query.get(item_id)
     if item is None:
         return jsonify({'message': 'Item could not be found.'}), 404
@@ -134,4 +126,5 @@ def delete_item_from_category(user_id, category_id, item_id):
 
     item.delete_from_db()
     db.session.commit()
+
     return jsonify({'message': 'Deleted item successfully.'}), 200
