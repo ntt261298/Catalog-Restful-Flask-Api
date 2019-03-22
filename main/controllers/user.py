@@ -1,7 +1,7 @@
 from flask import jsonify, request
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token
 
 from main import app
 from main.models.user import UserModel
@@ -42,15 +42,13 @@ def register_user():
         return jsonify({'message': 'Something went wrong.'}), 500
     # Create access token
     access_token = create_access_token(identity=data['username'])
-    refresh_token = create_refresh_token(identity=data['username'])
     return jsonify({'message': 'Created user successfully.',
-                    'access_token': access_token,
-                    'refresh_token': refresh_token
+                    'access_token': access_token
                     }), 201
 
 
 @app.route('/users/auth', methods=['POST'])
-def auth_user():
+def authenticate_user():
     """
     :return: Authenticate user successful or fail
     """
@@ -67,9 +65,7 @@ def auth_user():
     # Verify user
     if user and verify_hash(user.password, data['password']):
         access_token = create_access_token(identity=data['username'])
-        refresh_token = create_refresh_token(identity=data['username'])
         return jsonify({'message': 'Logged in as {}.'.format(user.username),
-                        'access_token': access_token,
-                        'refresh_token': refresh_token
+                        'access_token': access_token
                         }), 200
     return jsonify({'message': 'Wrong credentials.'}), 404

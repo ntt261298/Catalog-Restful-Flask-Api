@@ -17,8 +17,3 @@ def get_all_categories():
     # Serialize the queryset
     results = categories_schema.dump(categories)
     return jsonify({'categories': results.data}), 200
-
-
-
-
-
