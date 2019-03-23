@@ -15,12 +15,5 @@ class UserModel(db.Model):
         self.username = username
         self.password = password
 
-    @classmethod
-    def find_user_by_username(cls, username):
-        return cls.query.filter_by(username=username).first()
-
     def save_to_db(self):
         db.session.add(self)
-
-    def delete_from_db(self):
-        db.session.delete(self)

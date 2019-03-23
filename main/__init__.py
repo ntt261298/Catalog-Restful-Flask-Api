@@ -3,7 +3,6 @@ import os
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from main.libs.bcrypt_hash import bcrypt
 from main.libs.database import db
 from config import app_config
 
@@ -12,15 +11,16 @@ app = Flask(__name__)
 jwt = JWTManager(app)
 
 # Configurations
-if os.environ['ENV'] not in ['development', 'production', 'testing']:
+try:
+    if os.environ['ENV'] in ['development', 'production', 'testing']:
+        app.config.from_object(app_config[os.environ['ENV']])
+    else:
+        app.config.from_object(app_config['default'])
+except Exception:
     app.config.from_object(app_config['default'])
-else:
-    app.config.from_object(app_config[os.environ['ENV']])
-
 
 with app.app_context():
     db.init_app(app)
-    bcrypt.init_app(app)
 
 
 @app.before_first_request

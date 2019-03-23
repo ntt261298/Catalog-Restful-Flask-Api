@@ -1,5 +1,4 @@
 from flask import jsonify
-from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import create_access_token
 
 from main import app
@@ -21,19 +20,18 @@ def register_user(data):
     """
     user = UserModel.query.filter_by(username=data['username']).first()
     if user:
-        return jsonify({'message': 'User already exists'}), 400
+        return jsonify({'message': 'User already exists.'}), 400
+
     # Create new user with hash password
     new_user = UserModel(
         username=data['username'],
         password=generate_hash(data['password'])
     )
-    try:
-        new_user.save_to_db()
-        db.session.commit()
-    except IntegrityError:
-        return jsonify({'message': 'Something went wrong.'}), 500
+    new_user.save_to_db()
+    db.session.commit()
     # Create access token
     access_token = create_access_token(identity=data['username'])
+
     return jsonify({'message': 'Created user successfully.',
                     'access_token': access_token
                     }), 201
@@ -46,11 +44,13 @@ def authenticate_user(data):
     :param data:
     :return: Authenticate user successful or fail
     """
-    user = UserModel.find_user_by_username(data['username'])
+    user = UserModel.query.filter_by(username=data['username']).first()
+    app.logger.info(user)
     # Verify user
     if user and verify_hash(user.password, data['password']):
         access_token = create_access_token(identity=data['username'])
         return jsonify({'message': 'Logged in as {}.'.format(user.username),
                         'access_token': access_token
                         }), 200
+
     return jsonify({'message': 'Wrong credentials.'}), 404

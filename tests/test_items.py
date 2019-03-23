@@ -1,4 +1,3 @@
-# Project/test.py
 import unittest
 
 import requests
@@ -8,6 +7,7 @@ from main import app, db
 from main.models.category import CategoryModel
 from main.models.item import ItemModel
 from main.models.user import UserModel
+from main.libs.bcrypt_hash import generate_hash
 from config import app_config
 import main.controllers
 
@@ -17,7 +17,7 @@ class CatalogApiTests(unittest.TestCase):
     password = '123456'
     cat_name = 'Cat1'
 
-    # Executed prior to each test
+    # Executed prior to each tests
     def setUp(self):
         with app.app_context():
             app.config.from_object(app_config['testing'])
@@ -29,15 +29,18 @@ class CatalogApiTests(unittest.TestCase):
             self.create_items()
             self.assertEqual(app.debug, False)
 
-    # Executed after each test
+    # Executed after each tests
     def tearDown(self):
-        pass
+        with app.app_context():
+            db.session.remove()
 
     # Helper methods
     def create_users(self):
         # Create a new user
-        new_user = UserModel(self.username, self.password)
+        new_user = UserModel(self.username, generate_hash(self.password))
         new_user.save_to_db()
+        test_user = UserModel('test', generate_hash('test123'))
+        test_user.save_to_db()
         db.session.commit()
         return
 
@@ -83,67 +86,31 @@ class CatalogApiTests(unittest.TestCase):
         return response
 
     def get_headers_authenticated_user(self):
-        headers = {}
-        headers['Content-Type'] = 'application/json'
-        response = requests.post('http://127.0.0.1:5000/users/auth',
-                                 data=json.dumps({"username": self.username,
-                                                  "password": self.password}),
-                                 headers=headers).json()
+        response = self.authenticate_user(self.username, self.password).json()
+
         headers = {}
         headers['Authorization'] = "Bearer " + response['access_token']
         headers['Content-Type'] = 'application/json'
         return headers
 
     # Test
-    def test_catalog_api_auth_invalid_user(self):
-        response = self.authenticate_user(self.username, 'FlaskIsOK')
-
-        self.assertEqual(response.status_code, 404)
-        self.assertIn('Wrong credentials.', response.json()['message'])
-
-    def test_catalog_api_auth_valid_user(self):
-        response = self.authenticate_user(self.username, self.password)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('Logged in as {}.'.format(self.username),
-                      response.json()['message'])
-
-    def test_catelog_api_register_invalid_user(self):
-        headers = {'Content-Type': 'application/json'}
-        json_data = {'username': 'truong123456', 'password': '123'}
-        response = self.app.post('/users',
-                                 data=json.dumps(json_data),
-                                 headers=headers,
-                                 follow_redirects=True)
-        self.assertEqual(response.status_code, 422)
-
-    def test_catelog_api_register_valid_user(self):
-        headers = {'Content-Type': 'application/json'}
-        json_data = {'username': 'truong123456', 'password': '123456xyz'}
-        response = self.app.post('/users',
-                                 data=json.dumps(json_data),
-                                 headers=headers,
-                                 follow_redirects=True)
-        self.assertEqual(response.status_code, 201)
-
-    def test_catalog_api_invalid_token(self):
-        headers = {}
-        token = 'InvalidTokenInvalidToken'
-        auth = 'Bearer ' + token
-        headers['Authorization'] = auth
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
-        response = self.app.post('/users/items', headers=headers)
-
-        self.assertEqual(response.status_code, 405)
-
-    def test_catalog_api_get_all_categories(self):
-        response = self.app.get('/items')
-
-        self.assertEqual(response.status_code, 200)
-
     def test_catalog_api_get_all_items(self):
         response = self.app.get('/items')
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_catalog_api_get_items_from_valid_category(self):
+        response = self.app.get('/categories/1/items')
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_catalog_api_get_items_from_invalid_category(self):
+        response = self.app.get('/categories/2/items')
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_catalog_api_get_item_from_invalid_category(self):
+        response = self.app.get('/categories/2/items/1')
 
         self.assertEqual(response.status_code, 200)
 
@@ -166,6 +133,26 @@ class CatalogApiTests(unittest.TestCase):
                                  follow_redirects=True)
 
         self.assertEqual(response.status_code, 422)
+
+    def test_catalog_api_create_item_from_invalid_category(self):
+        headers = self.get_headers_authenticated_user()
+        json_data = {'title': 'Tacos2', 'description': 'My favorite tacos!'}
+        response = self.app.post('/categories/2/items',
+                                 data=json.dumps(json_data),
+                                 headers=headers,
+                                 follow_redirects=True)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_catalog_create_item_with_no_input(self):
+        headers = self.get_headers_authenticated_user()
+        json_data = {}
+        response = self.app.post('/categories/1/items',
+                                 data=json.dumps(json_data),
+                                 headers=headers,
+                                 follow_redirects=True)
+
+        self.assertEqual(response.status_code, 400)
 
     def test_catalog_api_get_individual_item_valid(self):
         headers = self.get_headers_authenticated_user()
@@ -202,6 +189,27 @@ class CatalogApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn('Item could not be found.', json_data['message'])
 
+    def test_catalog_api_delete_item_from_invalid_category(self):
+        headers = self.get_headers_authenticated_user()
+        response = self.app.delete('/categories/2/items/1',
+                                   headers=headers)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_catalog_api_delete_item_not_permited(self):
+        response = self.authenticate_user('test', 'test123').json()
+
+        headers = {}
+        headers['Authorization'] = "Bearer " + response['access_token']
+        headers['Content-Type'] = 'application/json'
+
+        response = self.app.delete('/categories/1/items/1',
+                                   headers=headers)
+        json_data = json.loads(response.data.decode('utf-8'))
+
+        self.assertEqual(response.status_code, 550)
+        self.assertIn('Permission denied.', json_data['message'])
+
     def test_catalog_api_put_item_valid(self):
         headers = self.get_headers_authenticated_user()
         json_data = {'title': 'Updated item',
@@ -229,12 +237,51 @@ class CatalogApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn('Item could not be found.', json_data['message'])
 
-    def test_catalog_api_get_user_items_valid(self):
-        headers = self.get_headers_authenticated_user()
-        response = self.app.get('/users/items',
-                                headers=headers)
+    def test_catalog_api_put_item_not_permited(self):
+        response = self.authenticate_user('test', 'test123').json()
 
-        self.assertEqual(response.status_code, 200)
+        headers = {}
+        headers['Authorization'] = "Bearer " + response['access_token']
+        headers['Content-Type'] = 'application/json'
+
+        json_data_input = {'title': 'Updated item',
+                           'description': 'My favorite item'}
+        response = self.app.put('/categories/1/items/1',
+                                data=json.dumps(json_data_input),
+                                headers=headers,
+                                follow_redirects=True)
+        json_data = json.loads(response.data.decode('utf-8'))
+
+        self.assertEqual(response.status_code, 550)
+        self.assertIn('Permission denied.', json_data['message'])
+
+    def test_catalog_api_put_item_from_invalid_category(self):
+        headers = self.get_headers_authenticated_user()
+        json_data = {'title': 'Tacos2', 'description': 'My favorite tacos!'}
+        response = self.app.put('/categories/2/items/1',
+                                data=json.dumps(json_data),
+                                headers=headers,
+                                follow_redirects=True)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_catalog_api_create_item_with_deleted_user(self):
+        headers = self.get_headers_authenticated_user()
+        current_user = UserModel.query.filter_by(username=self.username)\
+            .first()
+        db.session.delete(current_user)
+        db.session.commit()
+
+        json_data = {'title': 'Tacos', 'description': 'My favorite tacos!'}
+        response = self.app.post('/categories/1/items',
+                                 data=json.dumps(json_data),
+                                 headers=headers,
+                                 follow_redirects=True)
+
+        json_data = json.loads(response.data.decode('utf-8'))
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Invalid user.', json_data['message'])
 
 
 if __name__ == "__main__":

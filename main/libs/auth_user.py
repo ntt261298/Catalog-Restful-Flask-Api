@@ -12,13 +12,13 @@ def auth_user(func):
     def my_func(*args, **kwargs):
         if 'Authorization' not in request.headers:
             return jsonify({'message': 'Unauthorized.'}), 401
-
-        data = request.headers['Authorization'].encode('ascii', 'ignore')
-        token = str.replace(str(data), 'Bearer ', '')
         try:
+            data = request.headers['Authorization'].encode('ascii', 'ignore')
+            token = str.replace(str(data), 'Bearer ', '')
+
             username = decode_token(token)['identity']
         except Exception:
-            return jsonify({'message': 'Invalid token.'}), 401
+            return jsonify({'message': 'Invalid token.'}), 400
 
         current_user = UserModel.query.filter_by(username=username).first()
 
