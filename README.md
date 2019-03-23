@@ -23,7 +23,8 @@ export ENV=testing # for test environment
 `python run.py`
 
 ### Run Test Unit
-`python -m unittest discover`
+`python manage.py cov # test with coverage`
+`python manage.py test # test without coverage`
 
 ### Migrate SQLAlchemy Database
 ```

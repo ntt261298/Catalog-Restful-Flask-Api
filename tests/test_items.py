@@ -112,7 +112,7 @@ class CatalogApiTests(unittest.TestCase):
     def test_catalog_api_get_item_from_invalid_category(self):
         response = self.app.get('/categories/2/items/1')
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
 
     def test_catalog_api_create_new_item_valid(self):
         headers = self.get_headers_authenticated_user()
