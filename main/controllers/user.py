@@ -45,7 +45,6 @@ def authenticate_user(data):
     :return: Authenticate user successful or fail
     """
     user = UserModel.query.filter_by(username=data['username']).first()
-    app.logger.info(user)
     # Verify user
     if user and verify_hash(user.password, data['password']):
         access_token = create_access_token(identity=data['username'])

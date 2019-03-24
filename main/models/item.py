@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from main.libs.database import db
 
 
@@ -7,6 +9,8 @@ class ItemModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500), nullable=False)
     description = db.Column(db.String(5000), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow(),
+                           nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 

@@ -196,7 +196,7 @@ class CatalogApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    def test_catalog_api_delete_item_not_permited(self):
+    def test_catalog_api_delete_item_not_permitted(self):
         response = self.authenticate_user('test', 'test123').json()
 
         headers = {}
@@ -237,7 +237,7 @@ class CatalogApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn('Item could not be found.', json_data['message'])
 
-    def test_catalog_api_put_item_not_permited(self):
+    def test_catalog_api_put_item_not_permitted(self):
         response = self.authenticate_user('test', 'test123').json()
 
         headers = {}
