@@ -1,6 +1,5 @@
 import unittest
 
-import requests
 from flask import json
 
 from main import app, db
@@ -12,22 +11,21 @@ from config import app_config
 import main.controllers
 
 
-class CatalogApiTests(unittest.TestCase):
+class ItemsApiTests(unittest.TestCase):
     username = 'truongnt'
     password = '123456'
     cat_name = 'Cat1'
 
     # Executed prior to each tests
     def setUp(self):
-        with app.app_context():
-            app.config.from_object(app_config['testing'])
-            self.app = app.test_client()
-            db.drop_all()
-            db.create_all()
-            self.create_users()
-            self.create_categories()
-            self.create_items()
-            self.assertEqual(app.debug, False)
+        app.config.from_object(app_config['testing'])
+        self.app = app.test_client()
+        db.drop_all()
+        db.create_all()
+        self.create_users()
+        self.create_categories()
+        self.create_items()
+        self.assertEqual(app.debug, False)
 
     # Executed after each tests
     def tearDown(self):
@@ -79,17 +77,19 @@ class CatalogApiTests(unittest.TestCase):
     def authenticate_user(self, username, password):
         headers = {}
         headers['Content-Type'] = 'application/json'
-        response = requests.post('http://127.0.0.1:5000/users/auth',
+        response = self.app.post('http://127.0.0.1:5000/users/auth',
                                  data=json.dumps({"username": username,
                                                   "password": password}),
                                  headers=headers)
         return response
 
     def get_headers_authenticated_user(self):
-        response = self.authenticate_user(self.username, self.password).json()
+        response = self.authenticate_user(self.username, self.password)
+
+        json_data = json.loads(response.data.decode('utf-8'))
 
         headers = {}
-        headers['Authorization'] = "Bearer " + response['access_token']
+        headers['Authorization'] = "Bearer " + json_data['access_token']
         headers['Content-Type'] = 'application/json'
         return headers
 
@@ -197,10 +197,12 @@ class CatalogApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_catalog_api_delete_item_not_permitted(self):
-        response = self.authenticate_user('test', 'test123').json()
+        response = self.authenticate_user('test', 'test123')
+
+        json_data = json.loads(response.data.decode('utf-8'))
 
         headers = {}
-        headers['Authorization'] = "Bearer " + response['access_token']
+        headers['Authorization'] = "Bearer " + json_data['access_token']
         headers['Content-Type'] = 'application/json'
 
         response = self.app.delete('/categories/1/items/1',
@@ -238,10 +240,12 @@ class CatalogApiTests(unittest.TestCase):
         self.assertIn('Item could not be found.', json_data['message'])
 
     def test_catalog_api_put_item_not_permitted(self):
-        response = self.authenticate_user('test', 'test123').json()
+        response = self.authenticate_user('test', 'test123')
+
+        json_data = json.loads(response.data.decode('utf-8'))
 
         headers = {}
-        headers['Authorization'] = "Bearer " + response['access_token']
+        headers['Authorization'] = "Bearer " + json_data['access_token']
         headers['Content-Type'] = 'application/json'
 
         json_data_input = {'title': 'Updated item',

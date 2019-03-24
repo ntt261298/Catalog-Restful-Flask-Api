@@ -10,7 +10,7 @@ from config import app_config
 import main.controllers
 
 
-class CatalogApiTests(unittest.TestCase):
+class AuthenticateApiTests(unittest.TestCase):
     username = 'truongnt'
     password = '123456'
 

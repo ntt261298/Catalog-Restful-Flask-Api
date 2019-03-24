@@ -6,7 +6,7 @@ from config import app_config
 import main.controllers
 
 
-class CatalogApiTests(unittest.TestCase):
+class CategoriesApiTests(unittest.TestCase):
     category_name = 'Category 1'
 
     # Executed prior to each tests
