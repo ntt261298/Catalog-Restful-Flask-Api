@@ -7,9 +7,7 @@ class UserModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(500), unique=True, nullable=False)
     password = db.Column(db.String(500), nullable=False)
-    items = db.relationship('ItemModel',
-                            lazy='dynamic',
-                            cascade='all, delete-orphan')
+    items = db.relationship('ItemModel', cascade='all, delete-orphan')
 
     def __init__(self, username, password):
         self.username = username

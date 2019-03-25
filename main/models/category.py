@@ -7,9 +7,7 @@ class CategoryModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(500), nullable=False)
 
-    items = db.relationship('ItemModel',
-                            lazy='dynamic',
-                            cascade='all, delete-orphan')
+    items = db.relationship('ItemModel', cascade='all, delete-orphan')
 
     def __init__(self, name):
         self.name = name
