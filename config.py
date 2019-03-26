@@ -1,6 +1,6 @@
-from configs.DevConfig import DevelopmentConfig
-from configs.ProConfig import ProductionConfig
-from configs.TestConfig import TestingConfig
+from configs.development import DevelopmentConfig
+from configs.production import ProductionConfig
+from configs.test import TestingConfig
 
 app_config = {
     'development': DevelopmentConfig,

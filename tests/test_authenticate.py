@@ -4,7 +4,7 @@ import requests
 from flask import json
 
 from main import app, db
-from main.models.user import UserModel
+from main.models.user import Users
 from main.libs.bcrypt_hash import generate_hash, verify_hash
 from config import app_config
 import main.controllers
@@ -32,7 +32,7 @@ class AuthenticateApiTests(unittest.TestCase):
     # Helper methods
     def create_user(self):
         # Create a new user
-        new_user = UserModel(self.username, generate_hash(self.password))
+        new_user = Users(self.username, generate_hash(self.password))
         db.session.add(new_user)
         db.session.commit()
         return
@@ -103,7 +103,8 @@ class AuthenticateApiTests(unittest.TestCase):
                                  data=json.dumps(json_data),
                                  headers=headers,
                                  follow_redirects=True)
-        self.assertEqual(response.status_code, 422)
+
+        self.assertEqual(response.status_code, 400)
 
     def test_catalog_api_register_valid_user(self):
         headers = {'Content-Type': 'application/json'}
@@ -112,6 +113,7 @@ class AuthenticateApiTests(unittest.TestCase):
                                  data=json.dumps(json_data),
                                  headers=headers,
                                  follow_redirects=True)
+
         self.assertEqual(response.status_code, 201)
 
     def test_catalog_api_register_existed_user(self):
@@ -139,18 +141,16 @@ class AuthenticateApiTests(unittest.TestCase):
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
         }
-
         json_data = {
             'title': 'new title',
             'description': 'new description'
         }
-
         response = self.app.post('http://127.0.0.1:5000/categories/1/items',
                                  data=json.dumps(json_data),
                                  headers=headers,
                                  follow_redirects=True)
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 403)
 
     def test_catalog_auth_invalid_header(self):
         headers = {}

@@ -3,7 +3,7 @@ from datetime import datetime
 from main.libs.database import db
 
 
-class ItemModel(db.Model):
+class Items(db.Model):
     __tablename__ = 'items'
 
     id = db.Column(db.Integer, primary_key=True)

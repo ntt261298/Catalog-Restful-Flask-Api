@@ -1,7 +1,7 @@
 import unittest
 
 from main import app, db
-from main.models.category import CategoryModel
+from main.models.category import Categories
 from config import app_config
 import main.controllers
 
@@ -27,7 +27,7 @@ class CategoriesApiTests(unittest.TestCase):
     # Helper methods
     def create_categories(self):
         # Create a new category
-        new_category = CategoryModel(self.category_name)
+        new_category = Categories(self.category_name)
         db.session.add(new_category)
         db.session.commit()
         return

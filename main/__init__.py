@@ -21,8 +21,3 @@ except Exception:
 
 with app.app_context():
     db.init_app(app)
-
-
-@app.before_first_request
-def create_tables():
-    db.create_all()

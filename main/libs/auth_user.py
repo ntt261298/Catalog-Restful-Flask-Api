@@ -3,7 +3,7 @@ from functools import wraps
 from flask import request, jsonify
 from flask_jwt_extended import decode_token
 
-from main.models.user import UserModel
+from main.models.user import Users
 from main import app
 
 
@@ -18,9 +18,9 @@ def auth_user(func):
 
             username = decode_token(token)['identity']
         except Exception:
-            return jsonify({'message': 'Invalid token.'}), 400
+            return jsonify({'message': 'Invalid token.'}), 403
 
-        current_user = UserModel.query.filter_by(username=username).first()
+        current_user = Users.query.filter_by(username=username).first()
 
         if current_user is None:
             return jsonify({'message': 'Invalid user.'}), 404

@@ -1,15 +1,12 @@
 from flask import jsonify
 
 from main import app
-from main.models.category import CategoryModel
-from main.models.item import ItemModel
+from main.models.category import Categories
+from main.models.item import Items
 from main.schemas.item import ItemSchema
 from main.libs.database import db
 from main.libs.auth_user import auth_user
-from main.libs.check_data import check_data
-
-item_schema = ItemSchema()
-items_schema = ItemSchema(many=True)
+from main.libs.validate_data import validate_data
 
 
 @app.route('/items', methods=['GET'])
@@ -17,10 +14,10 @@ def get_items():
     """
     :return: All items
     """
-    items = ItemModel.query.all()
-    result = items_schema.dump(items)
+    items = Items.query.all()
+    result = ItemSchema(many=True).dump(items)
 
-    return jsonify({'items': result.data}), 200
+    return jsonify(result.data)
 
 
 @app.route('/categories/<int:category_id>/items', methods=['GET'])
@@ -29,13 +26,13 @@ def get_items_from_category(category_id):
     :param category_id:
     :return: All items from a category which has id = category_id
     """
-    if CategoryModel.query.get(category_id) is None:
+    if Categories.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
-    items = ItemModel.query.filter_by(category_id=category_id).all()
-    result = items_schema.dump(items)
+    items = Items.query.filter_by(category_id=category_id).all()
+    result = ItemSchema(many=True).dump(items)
 
-    return jsonify({'items': result.data}), 200
+    return jsonify(result.data)
 
 
 @app.route('/categories/<int:category_id>/items/<int:item_id>',
@@ -46,32 +43,32 @@ def get_item_from_category(category_id, item_id):
     :param item_id:
     :return: An item id=item_id from a category id=category_id
     """
-    if CategoryModel.query.get(category_id) is None:
+    if Categories.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
-    if ItemModel.query.get(item_id) is None:
+    if Items.query.get(item_id) is None:
         return jsonify({'message': 'Item could not be found.'}), 404
 
-    item = ItemModel.query.get(item_id)
-    result = item_schema.dump(item)
+    item = Items.query.get(item_id)
+    result = ItemSchema().dump(item)
 
-    return jsonify({'item': result.data}), 200
+    return jsonify(result.data)
 
 
 @app.route('/categories/<int:category_id>/items', methods=['POST'])
 @auth_user
-@check_data(item_schema)
-def create_item_to_category(data, user_id, category_id):
+@validate_data(ItemSchema())
+def create_item(data, user_id, category_id):
     """
     :param data:
     :param user_id:
     :param category_id:
     :return: Created an item to a category successful or fail
     """
-    if CategoryModel.query.get(category_id) is None:
+    if Categories.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
 
     title, description = data['title'], data['description']
-    item = ItemModel(title, description, category_id, user_id)
+    item = Items(title, description, category_id, user_id)
     item.save_to_db()
     db.session.commit()
 
@@ -81,8 +78,8 @@ def create_item_to_category(data, user_id, category_id):
 @app.route('/categories/<int:category_id>/items/<int:item_id>',
            methods=['PUT'])
 @auth_user
-@check_data(item_schema)
-def update_item_from_category(data, user_id, category_id, item_id):
+@validate_data(ItemSchema())
+def update_item(data, user_id, category_id, item_id):
     """
     :param data:
     :param user_id:
@@ -90,9 +87,9 @@ def update_item_from_category(data, user_id, category_id, item_id):
     :param item_id:
     :return: Updated existed item successful or fail
     """
-    if CategoryModel.query.get(category_id) is None:
+    if Categories.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
-    item = ItemModel.query.get(item_id)
+    item = Items.query.get(item_id)
     if item is None:
         return jsonify({'message': 'Item could not be found.'}), 404
     if item.user_id != user_id:
@@ -103,22 +100,22 @@ def update_item_from_category(data, user_id, category_id, item_id):
     item.save_to_db()
     db.session.commit()
 
-    return jsonify({'message': 'Updated item successfully.'}), 200
+    return jsonify({'message': 'Updated item successfully.'})
 
 
 @app.route('/categories/<int:category_id>/items/<int:item_id>',
            methods=['DELETE'])
 @auth_user
-def delete_item_from_category(user_id, category_id, item_id):
+def delete_item(user_id, category_id, item_id):
     """
     :param user_id:
     :param category_id:
     :param item_id:
     :return: Deleted item successful or fail
     """
-    if CategoryModel.query.get(category_id) is None:
+    if Categories.query.get(category_id) is None:
         return jsonify({'message': 'Category could not be found.'}), 404
-    item = ItemModel.query.get(item_id)
+    item = Items.query.get(item_id)
     if item is None:
         return jsonify({'message': 'Item could not be found.'}), 404
     if item.user_id != user_id:
@@ -127,4 +124,4 @@ def delete_item_from_category(user_id, category_id, item_id):
     item.delete_from_db()
     db.session.commit()
 
-    return jsonify({'message': 'Deleted item successfully.'}), 200
+    return jsonify({'message': 'Deleted item successfully.'})

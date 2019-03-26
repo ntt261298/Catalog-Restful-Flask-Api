@@ -1,13 +1,13 @@
 from main.libs.database import db
 
 
-class UserModel(db.Model):
+class Users(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(500), unique=True, nullable=False)
     password = db.Column(db.String(500), nullable=False)
-    items = db.relationship('ItemModel', cascade='all, delete-orphan')
+    items = db.relationship('Items', cascade='all, delete-orphan')
 
     def __init__(self, username, password):
         self.username = username
