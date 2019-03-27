@@ -20,9 +20,9 @@ def auth_user(func):
         except Exception:
             return jsonify({'message': 'Invalid token.'}), 403
 
-        current_user = Users.query.filter_by(username=username).first()
-
-        if current_user is None:
+        try:
+            current_user = Users.query.filter_by(username=username).one()
+        except Exception:
             return jsonify({'message': 'Invalid user.'}), 404
 
         return func(current_user.id, *args, **kwargs)
